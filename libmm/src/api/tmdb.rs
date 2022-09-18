@@ -1,7 +1,8 @@
 use crate::api::tmdb::endpoint::TmdbEndpoint;
-use crate::api::tmdb::response::{ErrorInfo, MovieDetail};
+use crate::api::tmdb::response::{ErrorInfo, MovieDetail, SearchMovieResponse, SearchedMovie};
 use crate::error::{ApiError, Error};
 
+use crate::db::movie::NewMovie;
 use ureq::Agent;
 
 mod endpoint;
@@ -19,7 +20,7 @@ impl TmdbClient {
         Self { api_key, agent }
     }
 
-    pub fn get_movie_detail(&self, movie_id: usize) -> Result<Option<MovieDetail>, Error> {
+    pub fn get_movie_detail(&self, movie_id: usize) -> Result<Option<NewMovie>, Error> {
         let url = TmdbEndpoint::GetMovieDetail { movie_id }.url(&self.api_key);
 
         let res = self.agent.get(&url).call();
@@ -28,12 +29,44 @@ impl TmdbClient {
             Ok(res) => {
                 let res = res.into_json::<MovieDetail>();
                 match res {
-                    Ok(md) => Ok(Some(md)),
+                    Ok(md) => Ok(Some(md.into())),
                     Err(_e) => Err(ApiError::InvalidFormat.into()),
                 }
             }
             Err(ureq::Error::Status(401, _)) => Err(ApiError::ApiKey.into()),
             Err(ureq::Error::Status(404, _)) => Ok(None),
+            Err(ureq::Error::Status(_status, res)) => {
+                let res = res.into_json::<ErrorInfo>();
+                match res {
+                    Ok(e) => Err(ApiError::Unknown(e.status_message).into()),
+                    Err(_e) => Err(ApiError::InvalidFormat.into()),
+                }
+            }
+            Err(ureq::Error::Transport(t)) => Err(ApiError::Transport(t).into()),
+        }
+    }
+
+    pub fn search_movies_by_title(
+        &self,
+        title: impl AsRef<str>,
+    ) -> Result<Vec<SearchedMovie>, Error> {
+        let url = TmdbEndpoint::SearchMovies {
+            query: title.as_ref(),
+        }
+        .url(&self.api_key);
+
+        let res = self.agent.get(&url).call();
+
+        match res {
+            Ok(res) => {
+                let res = res.into_json::<SearchMovieResponse>();
+                match res {
+                    Ok(response) => Ok(response.results),
+                    Err(_e) => Err(ApiError::InvalidFormat.into()),
+                }
+            }
+            Err(ureq::Error::Status(401, _)) => Err(ApiError::ApiKey.into()),
+            Err(ureq::Error::Status(404, _)) => Ok(Vec::new()),
             Err(ureq::Error::Status(_status, res)) => {
                 let res = res.into_json::<ErrorInfo>();
                 match res {
