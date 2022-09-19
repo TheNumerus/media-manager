@@ -1,17 +1,16 @@
 use crate::args::RunMode;
 use crate::command::Command;
+use crate::config::Config;
 use crate::error::AppError;
-use directories::ProjectDirs;
-use std::io::{stdin, ErrorKind};
-use std::path::PathBuf;
+use crate::paths::Paths;
+use std::io::stdin;
 use std::process::ExitCode;
 
 mod args;
 mod command;
 mod config;
 mod error;
-
-const DEFAULT_DB_NAME: &str = "data.db";
+mod paths;
 
 fn main() -> ExitCode {
     if let Err(e) = run() {
@@ -25,10 +24,11 @@ fn main() -> ExitCode {
 fn run() -> Result<(), AppError> {
     let mode = RunMode::try_from(std::env::args())?;
 
-    let db_path = get_db_path()?;
-    std::fs::create_dir_all(&db_path.parent().unwrap())
-        .map_err(|e| AppError::Input("Could not create folder for data".to_owned(), e))?;
-    let db = libmm::db::Database::open(db_path)?;
+    let paths = Paths::new()?;
+    paths.make_dirs()?;
+
+    let db = libmm::db::Database::open(paths.db_path)?;
+    let config = Config::init(paths.config_path)?;
 
     match mode {
         RunMode::SingleCommand(command) => command.execute(&db),
@@ -67,18 +67,4 @@ fn get_command() -> Result<Command, AppError> {
     let args = buf.split_whitespace().collect::<Vec<_>>();
 
     Command::try_from_arr(&args)
-}
-
-fn get_db_path() -> Result<PathBuf, AppError> {
-    match ProjectDirs::from("", "", "media-manager") {
-        None => Err(AppError::Input(
-            "No home directory found".to_owned(),
-            ErrorKind::Other.into(),
-        )),
-        Some(dirs) => {
-            let mut root = dirs.data_dir().to_owned();
-            root.push(DEFAULT_DB_NAME);
-            Ok(root)
-        }
-    }
 }

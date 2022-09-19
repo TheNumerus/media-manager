@@ -8,6 +8,8 @@ pub enum AppError {
     Input(String, #[source] std::io::Error),
     #[error(transparent)]
     Library(#[from] libmm::error::Error),
+    #[error("Configuration Error: {0}")]
+    Config(String),
 }
 
 impl PartialEq for AppError {

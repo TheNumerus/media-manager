@@ -45,6 +45,7 @@ impl Database {
         row.get(0)
     }
 }
+
 pub trait Creatable<T> {
     fn create_table_sql() -> &'static str;
 }
