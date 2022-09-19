@@ -1,6 +1,7 @@
-use crate::AppError;
+use crate::{AppError, Config};
 use libmm::db::movie::Movie;
 use libmm::db::{Database, Selectable};
+use libmm::media::{NameParser, ParsedName};
 use std::io::ErrorKind;
 use std::path::PathBuf;
 
@@ -35,11 +36,11 @@ impl Command {
         }
     }
 
-    pub fn execute(self, db: &Database) -> Result<(), AppError> {
+    pub fn execute(self, db: &Database, config: &Config) -> Result<(), AppError> {
         match self {
             Self::PrintHelp => Self::print_help(),
             Self::ListMovies => Self::list_movies(db),
-            Self::AddMovie(path) => Self::add_movie(db, path),
+            Self::AddMovie(path) => Self::add_movie(db, config, path),
             Self::Exit => Ok(()),
         }
     }
@@ -66,7 +67,7 @@ impl Command {
         Ok(())
     }
 
-    fn add_movie(db: &Database, path: PathBuf) -> Result<(), AppError> {
+    fn add_movie(db: &Database, config: &Config, path: PathBuf) -> Result<(), AppError> {
         if !path.is_file() {
             // change to `ErrorKind::IsADirectory` after https://github.com/rust-lang/rust/issues/86442 stabilises
             return Err(AppError::Input(
@@ -74,11 +75,21 @@ impl Command {
                 ErrorKind::InvalidInput.into(),
             ));
         }
-        let filename = path.file_name().ok_or(AppError::Input(
+        let filename = path.file_stem().ok_or(AppError::Input(
             "Invalid filename".into(),
             ErrorKind::InvalidInput.into(),
         ))?;
-        dbg!(filename);
+
+        let ParsedName { title, year } = NameParser::parse(filename.to_string_lossy());
+
+        match year {
+            Some(year) => {
+                println!("Is this name correct?: \"{}\", release year: {year}", title);
+            }
+            None => {
+                println!("Is this name correct? : \"{}\"", title);
+            }
+        }
         todo!()
     }
 }

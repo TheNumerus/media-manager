@@ -31,7 +31,7 @@ fn run() -> Result<(), AppError> {
     let config = Config::init(paths.config_path)?;
 
     match mode {
-        RunMode::SingleCommand(command) => command.execute(&db),
+        RunMode::SingleCommand(command) => command.execute(&db, &config),
         RunMode::Interactive => loop {
             let command = match get_command() {
                 Ok(c) => c,
@@ -48,7 +48,7 @@ fn run() -> Result<(), AppError> {
             if let Command::Exit = command {
                 return Ok(());
             }
-            command.execute(&db)?;
+            command.execute(&db, &config)?;
         },
     }
 }

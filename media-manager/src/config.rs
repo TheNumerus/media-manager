@@ -58,7 +58,8 @@ impl Config {
             .read_line(&mut buf)
             .map_err(|e| AppError::Input("Failed to read input".into(), e))?;
 
-        buf.trim();
+        // trim right in-place
+        buf.truncate(buf.trim_end().len());
 
         Ok(buf)
     }

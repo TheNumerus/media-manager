@@ -4,3 +4,6 @@ members = [
     "libmm",
     "media-manager"
 ]
+
+[profile.release]
+lto = "thin"
