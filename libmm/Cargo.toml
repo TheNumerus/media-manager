@@ -11,4 +11,3 @@ matroska = "0.18.0"
 ureq = { version = "2.5.0", features = ["json"] }
 serde_json = "1.0"
 serde = { version = "1.0", features = ["derive"] }
-thiserror = "1.0"

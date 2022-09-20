@@ -1,33 +1,104 @@
-use thiserror::Error;
+use std::fmt::{Display, Formatter, Write};
 
-#[derive(Debug, Error)]
+#[derive(Debug)]
 pub enum ApiError {
-    #[error("Invalid API key")]
     ApiKey,
-    #[error("Invalid format of API response")]
     InvalidFormat,
-    #[error("Transport Error: {0}")]
-    Transport(#[from] ureq::Transport),
-    #[error("{0}")]
+    Transport(ureq::Transport),
     Unknown(String),
 }
 
-#[derive(Debug, Error)]
-pub enum DbError {
-    #[error("SQLite error: {0}")]
-    Sqlite(#[from] rusqlite::Error),
+impl Display for ApiError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::ApiKey => f.write_str("Invalid API key"),
+            Self::InvalidFormat => f.write_str("Invalid format of API response"),
+            Self::Transport(err) => f.write_fmt(format_args!("Transport Error: {err}")),
+            Self::Unknown(msg) => f.write_str(msg),
+        }
+    }
 }
 
-#[derive(Debug, Error)]
+impl From<ureq::Transport> for ApiError {
+    fn from(t: ureq::Transport) -> Self {
+        Self::Transport(t)
+    }
+}
+
+impl std::error::Error for ApiError {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        match self {
+            ApiError::Transport(t) => Some(t),
+            _ => None,
+        }
+    }
+}
+
+#[derive(Debug)]
+pub enum DbError {
+    Sqlite(rusqlite::Error),
+}
+
+impl Display for DbError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Sqlite(e) => f.write_fmt(format_args!("SQLite error: {e}")),
+        }
+    }
+}
+
+impl From<rusqlite::Error> for DbError {
+    fn from(e: rusqlite::Error) -> Self {
+        Self::Sqlite(e)
+    }
+}
+
+impl std::error::Error for DbError {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        match self {
+            DbError::Sqlite(e) => Some(e),
+        }
+    }
+}
+
+#[derive(Debug)]
 pub enum Error {
-    #[error(transparent)]
-    Api(#[from] ApiError),
-    #[error(transparent)]
-    Db(#[from] DbError),
+    Api(ApiError),
+    Db(DbError),
+}
+
+impl Display for Error {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Api(e) => f.write_fmt(format_args!("{e}")),
+            Self::Db(e) => f.write_fmt(format_args!("{e}")),
+        }
+    }
+}
+
+impl From<ApiError> for Error {
+    fn from(e: ApiError) -> Self {
+        Self::Api(e)
+    }
+}
+
+impl From<DbError> for Error {
+    fn from(e: DbError) -> Self {
+        Self::Db(e)
+    }
 }
 
 impl From<rusqlite::Error> for Error {
     fn from(e: rusqlite::Error) -> Self {
         Self::Db(DbError::Sqlite(e))
+    }
+}
+
+impl std::error::Error for Error {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        match self {
+            Error::Api(e) => Some(e),
+            Error::Db(e) => Some(e),
+        }
     }
 }

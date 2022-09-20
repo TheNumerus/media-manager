@@ -1,6 +1,6 @@
 use crate::AppError;
 use std::fmt::Debug;
-use std::fs::OpenOptions;
+use std::fs::{File, OpenOptions};
 use std::io::{Read, Write};
 use std::path::Path;
 use toml::value::Table;
@@ -41,13 +41,19 @@ impl Config {
         println!("Please input your TMDB token:");
         let token = crate::input::read_line()?;
 
-        let mut config = Table::new();
-        config.insert("tmdb_token".into(), Value::String(token.clone()));
-        let toml = toml::to_string(&config)
-            .map_err(|_| AppError::Config("Failed to create config".into()))?;
-        file.write_all(toml.as_bytes())
-            .map_err(|_| AppError::Config("Failed to write config file".into()))?;
+        let config = Self { tmdb_token: token };
+        config.write_to_file(file)?;
 
-        Ok(Self { tmdb_token: token })
+        Ok(config)
+    }
+
+    fn write_to_file(&self, mut file: File) -> Result<(), AppError> {
+        let mut config_toml = Table::new();
+        config_toml.insert("tmdb_token".into(), Value::String(self.tmdb_token.clone()));
+
+        let toml = toml::to_string(&config_toml).expect("Failed to create config");
+
+        file.write_all(toml.as_bytes())
+            .map_err(|_| AppError::Config("Failed to write config file".into()))
     }
 }
