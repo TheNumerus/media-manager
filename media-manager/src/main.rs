@@ -10,6 +10,7 @@ mod args;
 mod command;
 mod config;
 mod error;
+mod input;
 mod paths;
 
 fn main() -> ExitCode {

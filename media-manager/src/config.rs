@@ -38,7 +38,8 @@ impl Config {
             };
         }
 
-        let token = Self::get_token()?;
+        println!("Please input your TMDB token:");
+        let token = crate::input::read_line()?;
 
         let mut config = Table::new();
         config.insert("tmdb_token".into(), Value::String(token.clone()));
@@ -48,19 +49,5 @@ impl Config {
             .map_err(|_| AppError::Config("Failed to write config file".into()))?;
 
         Ok(Self { tmdb_token: token })
-    }
-
-    fn get_token() -> Result<String, AppError> {
-        println!("Please input your TMDB token:");
-
-        let mut buf = String::new();
-        std::io::stdin()
-            .read_line(&mut buf)
-            .map_err(|e| AppError::Input("Failed to read input".into(), e))?;
-
-        // trim right in-place
-        buf.truncate(buf.trim_end().len());
-
-        Ok(buf)
     }
 }

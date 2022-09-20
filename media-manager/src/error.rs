@@ -12,6 +12,13 @@ pub enum AppError {
     Config(String),
 }
 
+impl AppError {
+    /// Convenience method for invalid input errors
+    pub fn invalid_input(msg: impl AsRef<str>) -> Self {
+        Self::Input(msg.as_ref().into(), std::io::ErrorKind::InvalidInput.into())
+    }
+}
+
 impl PartialEq for AppError {
     fn eq(&self, other: &Self) -> bool {
         match (self, other) {
