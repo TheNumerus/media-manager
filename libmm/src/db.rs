@@ -1,5 +1,6 @@
 use crate::db::movie::Movie;
 use crate::error::{DbError, Error};
+use crate::Loaded;
 use rusqlite::{Connection, Row};
 use std::path::Path;
 
@@ -29,7 +30,7 @@ impl Database {
     }
 
     fn init(conn: &Connection) -> Result<(), Error> {
-        conn.execute_batch(<Database as Creatable<Movie>>::create_table_sql())?;
+        conn.execute_batch(<Database as Creatable<Movie<Loaded>>>::create_table_sql())?;
 
         Ok(())
     }

@@ -1,6 +1,6 @@
 use crate::{input, AppError, Config};
 use libmm::api::TmdbClient;
-use libmm::db::movie::{Movie, NewMovie};
+use libmm::db::movie::{LoadedMovie, Movie, NewMovie};
 use libmm::db::{Database, Insertable, Selectable};
 use libmm::media::{NameParser, ParsedName};
 use std::io::ErrorKind;
@@ -52,14 +52,14 @@ impl Command {
     }
 
     fn list_movies(db: &Database) -> Result<(), AppError> {
-        let movies = db.list_all()?;
+        let movies: Vec<LoadedMovie> = db.list_all()?;
 
         for movie in movies {
+            let id = movie.id();
             let Movie {
-                title,
-                release_year,
-                id,
-                tmdb_id,
+                ref title,
+                ref release_year,
+                ref tmdb_id,
                 ..
             } = movie;
             println!("[{id}/tmdb:{tmdb_id}] {title} ({release_year})");
