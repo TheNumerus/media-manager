@@ -1,4 +1,3 @@
-use crate::db::movie::NewMovie;
 use serde::Deserialize;
 
 #[derive(Deserialize, Debug)]
@@ -10,17 +9,6 @@ pub struct MovieDetail {
     pub overview: Option<String>,
     pub release_date: String,
     pub runtime: u32,
-}
-
-impl From<MovieDetail> for NewMovie {
-    fn from(md: MovieDetail) -> Self {
-        Self {
-            tmdb_id: md.id,
-            title: md.title,
-            original_runtime: md.runtime,
-            release_year: convert_year(md.release_date),
-        }
-    }
 }
 
 fn convert_year(date: String) -> u32 {

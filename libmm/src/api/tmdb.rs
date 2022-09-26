@@ -2,7 +2,6 @@ use crate::api::tmdb::endpoint::TmdbEndpoint;
 use crate::api::tmdb::response::{ErrorInfo, MovieDetail, SearchMovieResponse, SearchedMovie};
 use crate::error::{ApiError, Error};
 
-use crate::db::movie::NewMovie;
 use ureq::Agent;
 
 mod endpoint;
@@ -20,7 +19,7 @@ impl TmdbClient {
         Self { api_key, agent }
     }
 
-    pub fn get_movie_detail(&self, movie_id: usize) -> Result<Option<NewMovie>, Error> {
+    pub fn get_movie_detail(&self, movie_id: usize) -> Result<Option<MovieDetail>, Error> {
         let url = TmdbEndpoint::GetMovieDetail { movie_id }.url(&self.api_key);
 
         let res = self.agent.get(&url).call();

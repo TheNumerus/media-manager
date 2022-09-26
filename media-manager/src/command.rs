@@ -1,6 +1,6 @@
 use crate::{input, AppError, Config};
 use libmm::api::TmdbClient;
-use libmm::db::movie::Movie;
+use libmm::db::movie::{Movie, NewMovie};
 use libmm::db::{Database, Insertable, Selectable};
 use libmm::media::{NameParser, ParsedName};
 use std::io::ErrorKind;
@@ -69,7 +69,7 @@ impl Command {
     }
 
     fn add_movie(db: &Database, config: &Config, path: PathBuf) -> Result<(), AppError> {
-        let ParsedName { title, year } = Self::name_from_path(path)?;
+        let ParsedName { title, year } = Self::name_from_path(path.clone())?;
 
         let title = if Self::ask_if_correct(&title, year) {
             title
@@ -102,6 +102,8 @@ impl Command {
                     .get_movie_detail(results[res_index].id)?
                     .ok_or(AppError::invalid_input("No movie was found"))?;
                 let title = detail.title.clone();
+
+                let movie = NewMovie { path };
                 db.insert(detail)?;
                 println!("Movie {} was added to db", title);
             }

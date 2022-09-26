@@ -1,4 +1,4 @@
-use std::fmt::{Display, Formatter, Write};
+use std::fmt::{Display, Formatter};
 
 #[derive(Debug)]
 pub enum ApiError {
@@ -62,9 +62,37 @@ impl std::error::Error for DbError {
 }
 
 #[derive(Debug)]
+pub enum MediaError {
+    Matroska(matroska::MatroskaError),
+}
+
+impl Display for MediaError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            MediaError::Matroska(e) => f.write_fmt(format_args!("Matroska error: {e}")),
+        }
+    }
+}
+
+impl From<matroska::MatroskaError> for MediaError {
+    fn from(e: matroska::MatroskaError) -> Self {
+        Self::Matroska(e)
+    }
+}
+
+impl std::error::Error for MediaError {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        match self {
+            MediaError::Matroska(e) => Some(e),
+        }
+    }
+}
+
+#[derive(Debug)]
 pub enum Error {
     Api(ApiError),
     Db(DbError),
+    Media(MediaError),
 }
 
 impl Display for Error {
@@ -72,6 +100,7 @@ impl Display for Error {
         match self {
             Self::Api(e) => f.write_fmt(format_args!("{e}")),
             Self::Db(e) => f.write_fmt(format_args!("{e}")),
+            Self::Media(e) => f.write_fmt(format_args!("{e}")),
         }
     }
 }
@@ -88,6 +117,12 @@ impl From<DbError> for Error {
     }
 }
 
+impl From<MediaError> for Error {
+    fn from(e: MediaError) -> Self {
+        Self::Media(e)
+    }
+}
+
 impl From<rusqlite::Error> for Error {
     fn from(e: rusqlite::Error) -> Self {
         Self::Db(DbError::Sqlite(e))
@@ -99,6 +134,7 @@ impl std::error::Error for Error {
         match self {
             Error::Api(e) => Some(e),
             Error::Db(e) => Some(e),
+            Error::Media(e) => Some(e),
         }
     }
 }
