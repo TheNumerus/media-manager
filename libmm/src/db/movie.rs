@@ -1,34 +1,62 @@
 use crate::db::{Creatable, Database, Insertable, Selectable};
 use crate::error::Error;
-use crate::{Complete, EntityState, Loaded};
+use crate::{Complete, EntityState, Incomplete, Loaded};
 use rusqlite::{params, OptionalExtension, Row};
 use std::path::PathBuf;
-
-#[derive(Debug)]
-pub struct NewMovie {
-    pub tmdb_id: usize,
-    pub title: String,
-    pub path: PathBuf,
-    pub original_runtime: u32,
-    pub release_year: u32,
-}
 
 #[derive(Debug)]
 pub struct Movie<T: EntityState> {
     // are everywhere
     pub tmdb_id: usize,
     pub title: String,
-    pub path: PathBuf,
     pub release_year: u32,
+    // on loaded + complete
+    path: Option<PathBuf>,
+    original_runtime: Option<u32>, // might be on incomplete
+    cut: Option<String>,
     // only on loaded
     id: Option<usize>,
-    // on loaded + complete
-    original_runtime: Option<u32>,
+
     _marker: std::marker::PhantomData<T>,
 }
 
+pub type IncompleteMovie = Movie<Incomplete>;
 pub type CompleteMovie = Movie<Complete>;
 pub type LoadedMovie = Movie<Loaded>;
+
+impl Movie<Incomplete> {
+    pub fn new(tmdb_id: usize, title: String, release_year: u32) -> Self {
+        Self {
+            tmdb_id,
+            title,
+            release_year,
+            cut: None,
+            id: None,
+            path: None,
+            original_runtime: None,
+            _marker: std::marker::PhantomData::default(),
+        }
+    }
+
+    pub fn set_runtime(&mut self, runtime: Option<u32>) -> &mut Self {
+        self.original_runtime = runtime;
+        self
+    }
+
+    pub fn complete(self, path: PathBuf) -> Movie<Complete> {
+        // change after https://github.com/rust-lang/rust/issues/86555 stabilises
+        Movie {
+            path: Some(path),
+            tmdb_id: self.tmdb_id,
+            title: self.title,
+            release_year: self.release_year,
+            original_runtime: self.original_runtime,
+            cut: self.cut,
+            id: None,
+            _marker: std::marker::PhantomData::default(),
+        }
+    }
+}
 
 impl Movie<Loaded> {
     pub fn id(&self) -> &usize {
@@ -42,6 +70,7 @@ impl<T: EntityState> Creatable<Movie<T>> for Database {
             `id` INTEGER PRIMARY KEY,
             `tmdb_id` INTEGER,
             `title` TEXT,
+            `cut` TEXT,
             `path` TEXT,
             `original_runtime` INTEGER,
             `release_year` INTEGER
@@ -49,11 +78,12 @@ impl<T: EntityState> Creatable<Movie<T>> for Database {
     }
 }
 
-impl Insertable<NewMovie> for Database {
-    fn insert(&self, object: NewMovie) -> Result<usize, Error> {
-        let NewMovie {
+impl Insertable<CompleteMovie> for Database {
+    fn insert(&self, object: CompleteMovie) -> Result<usize, Error> {
+        let Movie {
             tmdb_id,
             title,
+            cut,
             path,
             original_runtime,
             release_year,
@@ -61,13 +91,14 @@ impl Insertable<NewMovie> for Database {
         } = object;
 
         let mut stmt = self.conn.prepare(
-            "INSERT INTO `movie` (tmdb_id, title, path, original_runtime, release_year) VALUES (?, ?, ?, ?, ?)",
+            "INSERT INTO `movie` (tmdb_id, title, cut, path, original_runtime, release_year) VALUES (?, ?, ?, ?, ?, ?)",
         )?;
 
         stmt.execute(params![
             tmdb_id,
             title.as_str(),
-            path.to_string_lossy(),
+            cut,
+            path.unwrap().to_string_lossy(),
             original_runtime,
             release_year
         ])?;
@@ -101,9 +132,10 @@ fn movie_mapper(row: &Row) -> Result<LoadedMovie, rusqlite::Error> {
         id: row.get(0)?,
         tmdb_id: row.get(1)?,
         title: row.get(2)?,
-        path: PathBuf::from(row.get::<usize, String>(3)?),
-        original_runtime: row.get(4)?,
-        release_year: row.get(5)?,
+        cut: row.get(3)?,
+        path: Some(PathBuf::from(row.get::<usize, String>(4)?)),
+        original_runtime: row.get(5)?,
+        release_year: row.get(6)?,
         _marker: std::marker::PhantomData::default(),
     })
 }

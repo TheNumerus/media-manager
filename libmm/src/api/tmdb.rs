@@ -1,7 +1,8 @@
 use crate::api::tmdb::endpoint::TmdbEndpoint;
-use crate::api::tmdb::response::{ErrorInfo, MovieDetail, SearchMovieResponse, SearchedMovie};
+use crate::api::tmdb::response::{ErrorInfo, MovieDetail, SearchMovieResponse};
 use crate::error::{ApiError, Error};
 
+use crate::db::movie::IncompleteMovie;
 use ureq::Agent;
 
 mod endpoint;
@@ -19,7 +20,7 @@ impl TmdbClient {
         Self { api_key, agent }
     }
 
-    pub fn get_movie_detail(&self, movie_id: usize) -> Result<Option<MovieDetail>, Error> {
+    pub fn get_movie_detail(&self, movie_id: usize) -> Result<Option<IncompleteMovie>, Error> {
         let url = TmdbEndpoint::GetMovieDetail { movie_id }.url(&self.api_key);
 
         let res = self.agent.get(&url).call();
@@ -45,10 +46,14 @@ impl TmdbClient {
         }
     }
 
+    /// Returns list of movies.
+    ///
+    /// ## Remarks
+    /// Movies are without runtime length.
     pub fn search_movies_by_title(
         &self,
         title: impl AsRef<str>,
-    ) -> Result<Vec<SearchedMovie>, Error> {
+    ) -> Result<Vec<IncompleteMovie>, Error> {
         let url = TmdbEndpoint::SearchMovies {
             query: title.as_ref(),
         }
@@ -60,7 +65,7 @@ impl TmdbClient {
             Ok(res) => {
                 let res = res.into_json::<SearchMovieResponse>();
                 match res {
-                    Ok(response) => Ok(response.results),
+                    Ok(response) => Ok(response.results.into_iter().map(|m| m.into()).collect()),
                     Err(_e) => Err(ApiError::InvalidFormat.into()),
                 }
             }

@@ -1,6 +1,6 @@
 use crate::{input, AppError, Config};
 use libmm::api::TmdbClient;
-use libmm::db::movie::{LoadedMovie, Movie, NewMovie};
+use libmm::db::movie::LoadedMovie;
 use libmm::db::{Database, Insertable, Selectable};
 use libmm::media::{NameParser, ParsedName};
 use std::io::ErrorKind;
@@ -56,7 +56,7 @@ impl Command {
 
         for movie in movies {
             let id = movie.id();
-            let Movie {
+            let LoadedMovie {
                 ref title,
                 ref release_year,
                 ref tmdb_id,
@@ -82,10 +82,7 @@ impl Command {
         let results = client.search_movies_by_title(title)?;
 
         for (i, movie) in results.iter().enumerate() {
-            println!("[{}] {} ({})", i + 1, movie.title, movie.release_date);
-            if let Some(overview) = &movie.overview {
-                println!("\t{overview}");
-            }
+            println!("[{}] {} ({})", i + 1, movie.title, movie.release_year);
         }
 
         println!("Please select movie by its index, or 0 if none is correct");
@@ -99,12 +96,12 @@ impl Command {
             i if i <= (results.len()) => {
                 let res_index = i - 1;
                 let detail = client
-                    .get_movie_detail(results[res_index].id)?
+                    .get_movie_detail(results[res_index].tmdb_id)?
                     .ok_or(AppError::invalid_input("No movie was found"))?;
                 let title = detail.title.clone();
 
-                let movie = NewMovie { path };
-                db.insert(detail)?;
+                let movie = detail.complete(path);
+                db.insert(movie)?;
                 println!("Movie {} was added to db", title);
             }
             _ => println!("Invalid index given, no movie was added."),
