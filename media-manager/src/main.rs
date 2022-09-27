@@ -1,5 +1,5 @@
 use crate::args::RunMode;
-use crate::command::Command;
+use crate::command::{Command, CommandParser};
 use crate::config::Config;
 use crate::error::AppError;
 use crate::paths::Paths;
@@ -67,5 +67,5 @@ fn get_command() -> Result<Command, AppError> {
 
     let args = buf.split_whitespace().collect::<Vec<_>>();
 
-    Command::try_from_arr(&args)
+    CommandParser::try_from_arr(&args)
 }

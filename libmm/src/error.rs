@@ -64,12 +64,14 @@ impl std::error::Error for DbError {
 #[derive(Debug)]
 pub enum MediaError {
     Matroska(matroska::MatroskaError),
+    NoVideoTrack,
 }
 
 impl Display for MediaError {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
             MediaError::Matroska(e) => f.write_fmt(format_args!("Matroska error: {e}")),
+            MediaError::NoVideoTrack => f.write_str("No video track was found"),
         }
     }
 }
@@ -84,6 +86,7 @@ impl std::error::Error for MediaError {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         match self {
             MediaError::Matroska(e) => Some(e),
+            _ => None,
         }
     }
 }

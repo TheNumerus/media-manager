@@ -53,9 +53,11 @@ impl TmdbClient {
     pub fn search_movies_by_title(
         &self,
         title: impl AsRef<str>,
+        year: Option<usize>,
     ) -> Result<Vec<IncompleteMovie>, Error> {
         let url = TmdbEndpoint::SearchMovies {
             query: title.as_ref(),
+            year,
         }
         .url(&self.api_key);
 

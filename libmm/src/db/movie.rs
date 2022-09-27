@@ -58,9 +58,19 @@ impl Movie<Incomplete> {
     }
 }
 
+impl Movie<Complete> {
+    pub fn path(&self) -> &PathBuf {
+        self.path.as_ref().unwrap()
+    }
+}
+
 impl Movie<Loaded> {
     pub fn id(&self) -> &usize {
         self.id.as_ref().unwrap()
+    }
+
+    pub fn path(&self) -> &PathBuf {
+        self.path.as_ref().unwrap()
     }
 }
 

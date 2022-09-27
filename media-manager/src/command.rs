@@ -1,46 +1,29 @@
 use crate::{input, AppError, Config};
 use libmm::api::TmdbClient;
-use libmm::db::movie::LoadedMovie;
-use libmm::db::{Database, Insertable, Selectable};
+use libmm::db::{Database, Insertable};
 use libmm::media::{NameParser, ParsedName};
 use std::io::ErrorKind;
 use std::path::PathBuf;
 
+mod list_movies;
+mod parser;
+
+use list_movies::ListMoviesCommand;
+pub use parser::CommandParser;
+
 #[derive(Debug, Eq, PartialEq)]
 pub enum Command {
     PrintHelp,
-    ListMovies,
+    ListMovies(ListMoviesCommand),
     AddMovie(PathBuf),
     Exit,
 }
 
 impl Command {
-    pub fn try_from_arr(args: &[impl AsRef<str>]) -> Result<Self, AppError> {
-        let mut args = args.iter();
-
-        let first = args
-            .next()
-            .ok_or(AppError::ArgsParse("Empty argument list".into()))?
-            .as_ref();
-
-        match first {
-            "list-movies" => Ok(Self::ListMovies),
-            "add-movie" => {
-                let path = args
-                    .next()
-                    .ok_or(AppError::ArgsParse("No path to movie provided".into()))?;
-                Ok(Self::AddMovie(PathBuf::from(path.as_ref())))
-            }
-            "help" => Ok(Self::PrintHelp),
-            "exit" => Ok(Self::Exit),
-            _ => Err(AppError::ArgsParse("Unknown command".into())),
-        }
-    }
-
     pub fn execute(self, db: &Database, config: &Config) -> Result<(), AppError> {
         match self {
             Self::PrintHelp => Self::print_help(),
-            Self::ListMovies => Self::list_movies(db),
+            Self::ListMovies(command) => command.execute(db),
             Self::AddMovie(path) => Self::add_movie(db, config, path),
             Self::Exit => Ok(()),
         }
@@ -48,23 +31,6 @@ impl Command {
 
     fn print_help() -> Result<(), AppError> {
         println!("help");
-        Ok(())
-    }
-
-    fn list_movies(db: &Database) -> Result<(), AppError> {
-        let movies: Vec<LoadedMovie> = db.list_all()?;
-
-        for movie in movies {
-            let id = movie.id();
-            let LoadedMovie {
-                ref title,
-                ref release_year,
-                ref tmdb_id,
-                ..
-            } = movie;
-            println!("[{id}/tmdb:{tmdb_id}] {title} ({release_year})");
-        }
-
         Ok(())
     }
 
@@ -79,7 +45,7 @@ impl Command {
 
         let client = TmdbClient::new(config.tmdb_token.clone());
 
-        let results = client.search_movies_by_title(title)?;
+        let results = client.search_movies_by_title(title, year)?;
 
         for (i, movie) in results.iter().enumerate() {
             println!("[{}] {} ({})", i + 1, movie.title, movie.release_year);
@@ -120,18 +86,17 @@ impl Command {
             }
         }
 
-        let name_correct = loop {
+        loop {
             let confirmation = input::ask_confirmation();
 
             match confirmation {
-                Ok(c) => break c,
+                Ok(c) => return c,
                 Err(e) => {
                     println!("{e}");
                     continue;
                 }
             }
-        };
-        name_correct
+        }
     }
 
     fn name_from_path(path: PathBuf) -> Result<ParsedName, AppError> {

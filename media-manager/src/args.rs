@@ -1,4 +1,4 @@
-use crate::command::Command;
+use crate::command::{Command, CommandParser};
 use crate::AppError;
 use std::env::Args;
 
@@ -15,7 +15,7 @@ impl RunMode {
             [arg, ..] => match arg.as_ref() {
                 "-h" | "--help" => Ok(Self::SingleCommand(Command::PrintHelp)),
                 "-i" | "--interactive" => Ok(Self::Interactive),
-                _ => Ok(Self::SingleCommand(Command::try_from_arr(args)?)),
+                _ => Ok(Self::SingleCommand(CommandParser::try_from_arr(args)?)),
             },
         }
     }
@@ -39,20 +39,13 @@ mod tests {
 
     #[test]
     pub fn try_parse_args() {
-        let args = [
-            vec!["-i"],
-            vec!["-h"],
-            vec![],
-            vec!["-a"],
-            vec!["list-movies"],
-        ];
+        let args = [vec!["-i"], vec!["-h"], vec![], vec!["-a"]];
 
         let results = [
             Ok(RunMode::Interactive),
             Ok(RunMode::SingleCommand(Command::PrintHelp)),
             Ok(RunMode::SingleCommand(Command::PrintHelp)),
             Err(AppError::ArgsParse("".to_owned())),
-            Ok(RunMode::SingleCommand(Command::ListMovies)),
         ];
 
         for (args, result) in args.into_iter().zip(results) {
