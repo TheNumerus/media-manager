@@ -1,4 +1,5 @@
 use crate::{input, AppError, Config};
+use clap::Subcommand;
 use libmm::api::TmdbClient;
 use libmm::db::{Database, Insertable};
 use libmm::media::{NameParser, ParsedName};
@@ -6,32 +7,21 @@ use std::io::ErrorKind;
 use std::path::PathBuf;
 
 mod list_movies;
-mod parser;
 
 use list_movies::ListMoviesCommand;
-pub use parser::CommandParser;
 
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug, Eq, PartialEq, Subcommand)]
 pub enum Command {
-    PrintHelp,
     ListMovies(ListMoviesCommand),
-    AddMovie(PathBuf),
-    Exit,
+    AddMovie { path: PathBuf },
 }
 
 impl Command {
     pub fn execute(self, db: &Database, config: &Config) -> Result<(), AppError> {
         match self {
-            Self::PrintHelp => Self::print_help(),
             Self::ListMovies(command) => command.execute(db),
-            Self::AddMovie(path) => Self::add_movie(db, config, path),
-            Self::Exit => Ok(()),
+            Self::AddMovie { path } => Self::add_movie(db, config, path),
         }
-    }
-
-    fn print_help() -> Result<(), AppError> {
-        println!("help");
-        Ok(())
     }
 
     fn add_movie(db: &Database, config: &Config, path: PathBuf) -> Result<(), AppError> {

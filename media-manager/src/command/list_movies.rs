@@ -1,3 +1,4 @@
+use clap::Args;
 use libmm::db::movie::LoadedMovie;
 use libmm::db::{Database, Selectable};
 use libmm::media::MediaMetadata;
@@ -5,8 +6,11 @@ use std::fs::File;
 
 use crate::AppError;
 
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug, Eq, PartialEq, Args)]
+/// List all movies in database
 pub struct ListMoviesCommand {
+    #[arg(long)]
+    /// Print additional info about file
     pub with_metadata: bool,
 }
 

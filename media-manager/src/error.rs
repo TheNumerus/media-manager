@@ -3,7 +3,6 @@ use std::fmt::{Display, Formatter};
 
 #[derive(Debug)]
 pub enum AppError {
-    ArgsParse(String),
     Input(String, std::io::Error),
     Library(libmm::error::Error),
     Config(String),
@@ -19,7 +18,6 @@ impl AppError {
 impl Display for AppError {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::ArgsParse(msg) => f.write_fmt(format_args!("Argument Parsing Error: {msg}")),
             Self::Input(msg, err) => {
                 f.write_fmt(format_args!("Input Error: {msg}, caused by {err}"))
             }
@@ -42,15 +40,5 @@ impl Error for AppError {
 impl From<libmm::error::Error> for AppError {
     fn from(e: libmm::error::Error) -> Self {
         Self::Library(e)
-    }
-}
-
-impl PartialEq for AppError {
-    fn eq(&self, other: &Self) -> bool {
-        match (self, other) {
-            (Self::ArgsParse(_), Self::ArgsParse(_)) => true,
-            (Self::Input(_, e1), Self::Input(_, e2)) => e1.kind() == e2.kind(),
-            (_, _) => false,
-        }
     }
 }

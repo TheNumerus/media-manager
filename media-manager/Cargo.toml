@@ -5,5 +5,6 @@ edition = "2021"
 
 [dependencies]
 libmm = { path = "../libmm" }
+clap = { version = "4.0.0-rc.3", features = ["derive"] }
 directories = "4.0"
 toml = "0.5"
