@@ -65,6 +65,7 @@ impl std::error::Error for DbError {
 pub enum MediaError {
     Matroska(matroska::MatroskaError),
     NoVideoTrack,
+    IncompleteMetadata,
 }
 
 impl Display for MediaError {
@@ -72,6 +73,7 @@ impl Display for MediaError {
         match self {
             MediaError::Matroska(e) => f.write_fmt(format_args!("Matroska error: {e}")),
             MediaError::NoVideoTrack => f.write_str("No video track was found"),
+            MediaError::IncompleteMetadata => f.write_str("Cannot real all needed metadata"),
         }
     }
 }

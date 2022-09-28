@@ -62,6 +62,18 @@ impl Movie<Complete> {
     pub fn path(&self) -> &PathBuf {
         self.path.as_ref().unwrap()
     }
+
+    pub fn original_runtime(&self) -> &u32 {
+        self.original_runtime.as_ref().unwrap()
+    }
+
+    pub fn cut(&self) -> &Option<String> {
+        &self.cut
+    }
+
+    pub fn cut_mut(&mut self) -> &mut Option<String> {
+        &mut self.cut
+    }
 }
 
 impl Movie<Loaded> {
@@ -71,6 +83,14 @@ impl Movie<Loaded> {
 
     pub fn path(&self) -> &PathBuf {
         self.path.as_ref().unwrap()
+    }
+
+    pub fn original_runtime(&self) -> &u32 {
+        self.original_runtime.as_ref().unwrap()
+    }
+
+    pub fn cut(&self) -> &Option<String> {
+        &self.cut
     }
 }
 
@@ -112,7 +132,8 @@ impl Insertable<CompleteMovie> for Database {
             original_runtime,
             release_year
         ])?;
-        Ok(Database::last_insert_id(self)?)
+
+        Database::last_insert_id(self)
     }
 }
 

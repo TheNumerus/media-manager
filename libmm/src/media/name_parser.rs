@@ -10,7 +10,10 @@ impl NameParser {
 
         let year = Self::guess_year(&title);
 
-        if let Some(index) = year.map(|(i, _)| i).or(Self::find_known_separator(&title)) {
+        if let Some(index) = year
+            .map(|(i, _)| i)
+            .or_else(|| Self::find_known_separator(&title))
+        {
             // year or resolution is usually last relevant info
             title = title
                 .split_whitespace()

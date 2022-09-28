@@ -27,9 +27,10 @@ impl From<MovieDetail> for IncompleteMovie {
     }
 }
 
+/// Convert from yyyy-mm-dd to year integer
 fn convert_year(date: String) -> u32 {
     date.split('-')
-        .nth(0)
+        .next()
         .expect("Invalid date format")
         .parse()
         .expect("Invalid number")

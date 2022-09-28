@@ -21,13 +21,18 @@ impl ListMoviesCommand {
         for movie in movies {
             let id = movie.id();
             let path = movie.path();
+            let cut = match movie.cut() {
+                Some(cut) => format!("({cut}) "),
+                None => String::new(),
+            };
             let LoadedMovie {
                 ref title,
                 ref release_year,
                 ref tmdb_id,
                 ..
             } = movie;
-            println!("[{id}/tmdb:{tmdb_id}] {title} ({release_year})");
+
+            println!("[{id}/tmdb:{tmdb_id}] {title} {cut}({release_year})");
 
             if self.with_metadata {
                 let file = File::open(path).map_err(|e| {

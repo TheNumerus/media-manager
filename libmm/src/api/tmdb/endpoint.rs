@@ -34,7 +34,7 @@ impl<'a> TmdbEndpoint<'a> {
 
     fn build_query(params: &[(&'static str, impl AsRef<str> + Display)]) -> String {
         params
-            .into_iter()
+            .iter()
             .map(|(k, v)| format!("{k}={v}"))
             .collect::<Vec<_>>()
             .join("&")

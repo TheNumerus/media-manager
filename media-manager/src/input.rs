@@ -18,6 +18,25 @@ pub fn ask_confirmation() -> Result<bool, AppError> {
     }
 }
 
+pub fn ask_confirmation_looped() -> Result<bool, AppError> {
+    let mut buf = String::with_capacity(4);
+
+    loop {
+        stdin()
+            .read_line(&mut buf)
+            .map_err(|e| AppError::Input("Error reading input".into(), e))?;
+
+        match buf.trim() {
+            "y" => return Ok(true),
+            "n" => return Ok(false),
+            _ => {
+                println!("Invalid input, write y/n");
+                continue;
+            }
+        }
+    }
+}
+
 pub fn read_line() -> Result<String, AppError> {
     let mut buf = String::new();
     stdin()
