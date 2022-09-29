@@ -2,9 +2,9 @@ use crate::db::{Creatable, Database, Insertable, Selectable};
 use crate::error::Error;
 use crate::{Complete, EntityState, Incomplete, Loaded};
 use rusqlite::{params, OptionalExtension, Row};
+use std::fmt::{Debug, Formatter};
 use std::path::PathBuf;
 
-#[derive(Debug)]
 pub struct Movie<T: EntityState> {
     // are everywhere
     pub tmdb_id: usize,
@@ -23,6 +23,20 @@ pub struct Movie<T: EntityState> {
 pub type IncompleteMovie = Movie<Incomplete>;
 pub type CompleteMovie = Movie<Complete>;
 pub type LoadedMovie = Movie<Loaded>;
+
+impl<T: EntityState> Debug for Movie<T> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Movie")
+            .field("id", &self.id)
+            .field("tmdb_id", &self.tmdb_id)
+            .field("title", &self.title)
+            .field("release_year", &self.title)
+            .field("original_runtime", &self.original_runtime)
+            .field("cut", &self.cut)
+            .field("path", &self.path)
+            .finish()
+    }
+}
 
 impl Movie<Incomplete> {
     pub fn new(tmdb_id: usize, title: String, release_year: u32) -> Self {
@@ -96,7 +110,7 @@ impl Movie<Loaded> {
 
 impl<T: EntityState> Creatable<Movie<T>> for Database {
     fn create_table_sql() -> &'static str {
-        "CREATE TABLE `movie` (
+        "CREATE TABLE IF NOT EXISTS `movie` (
             `id` INTEGER PRIMARY KEY,
             `tmdb_id` INTEGER,
             `title` TEXT,

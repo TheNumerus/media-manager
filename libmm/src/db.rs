@@ -1,4 +1,5 @@
 use crate::db::movie::Movie;
+use crate::db::tvshow::TvShow;
 use crate::error::{DbError, Error};
 use crate::Loaded;
 use rusqlite::{Connection, Row};
@@ -16,9 +17,7 @@ impl Database {
     pub fn open<P: AsRef<Path>>(path: P) -> Result<Self, Error> {
         let conn = Connection::open(path)?;
 
-        if Self::is_conn_empty(&conn)? {
-            Self::init(&conn)?;
-        }
+        Self::init(&conn)?;
 
         Ok(Self { conn })
     }
@@ -31,6 +30,7 @@ impl Database {
 
     fn init(conn: &Connection) -> Result<(), Error> {
         conn.execute_batch(<Database as Creatable<Movie<Loaded>>>::create_table_sql())?;
+        conn.execute_batch(<Database as Creatable<TvShow<Loaded>>>::create_table_sql())?;
 
         Ok(())
     }
