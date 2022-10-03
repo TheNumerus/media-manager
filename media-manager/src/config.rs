@@ -29,13 +29,8 @@ impl Config {
         let conf = toml::from_str::<Table>(&contents)
             .map_err(|_| AppError::Config("Invalid configuration format".into()))?;
 
-        if let Some(token) = conf.get("tmdb_token") {
-            return match token {
-                Value::String(s) => Ok(Self {
-                    tmdb_token: s.clone(),
-                }),
-                _ => Err(AppError::Config("Invalid data type of `tmdb_token`".into())),
-            };
+        if let Ok(config) = Self::try_from(conf) {
+            return Ok(config);
         }
 
         println!("Please input your TMDB token:");
@@ -48,12 +43,37 @@ impl Config {
     }
 
     fn write_to_file(&self, mut file: File) -> Result<(), AppError> {
-        let mut config_toml = Table::new();
-        config_toml.insert("tmdb_token".into(), Value::String(self.tmdb_token.clone()));
-
-        let toml = toml::to_string(&config_toml).expect("Failed to create config");
+        let toml = toml::to_string(&Value::from(self)).expect("Failed to create config");
 
         file.write_all(toml.as_bytes())
             .map_err(|_| AppError::Config("Failed to write config file".into()))
+    }
+}
+
+impl TryFrom<Table> for Config {
+    type Error = AppError;
+
+    fn try_from(table: Table) -> Result<Self, Self::Error> {
+        if let Some(token) = table.get("tmdb_token") {
+            return match token {
+                Value::String(s) => Ok(Self {
+                    tmdb_token: s.clone(),
+                }),
+                _ => Err(AppError::Config("Invalid data type of `tmdb_token`".into())),
+            };
+        } else {
+            Err(AppError::Config("Missing value `tmdb_token`".into()))
+        }
+    }
+}
+
+impl From<&Config> for Value {
+    fn from(config: &Config) -> Self {
+        let Config { tmdb_token } = config;
+
+        let mut config_toml = Table::with_capacity(1);
+        config_toml.insert("tmdb_token".into(), Value::String(tmdb_token.clone()));
+
+        Value::Table(config_toml)
     }
 }

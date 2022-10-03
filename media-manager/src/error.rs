@@ -1,3 +1,4 @@
+use std::borrow::Cow;
 use std::error::Error;
 use std::fmt::{Display, Formatter};
 
@@ -5,7 +6,7 @@ use std::fmt::{Display, Formatter};
 pub enum AppError {
     Input(String, std::io::Error),
     Library(libmm::error::Error),
-    Config(String),
+    Config(Cow<'static, str>),
 }
 
 impl AppError {
